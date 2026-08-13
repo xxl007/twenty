@@ -10,6 +10,7 @@ import { isDefined } from 'twenty-shared/utils';
 import { motion } from 'framer-motion';
 import { useContext, useMemo } from 'react';
 import { ThemeContext } from 'twenty-ui/theme-constants';
+import { useIsMobile } from 'twenty-ui/utilities';
 import {
   type CommandMenuItemFieldsFragment,
   EngineComponentKey,
@@ -46,11 +47,16 @@ const StyledItemsContainer = styled.div<{ shouldReverse: boolean }>`
 export const PinnedCommandMenuItemButtons = () => {
   const { theme } = useContext(ThemeContext);
   const { commandMenuItems, containerType } = useContext(CommandMenuContext);
+  const isMobile = useIsMobile();
 
   // The footer is far narrower than a page header, so it labels a single action
   // and keeps that label rightmost. Headers label every action and reverse the
   // row so their labels sit left of the icons.
   const isSidePanelFooter = containerType === 'side-panel-footer';
+
+  // A mobile header has room for a couple of icons at most, so it drops every
+  // label rather than letting one labelled action push the rest into overflow.
+  const isMobilePageHeader = isMobile && !isSidePanelFooter;
 
   const pinnedCommandMenuItems = useMemo(
     () => commandMenuItems.filter((item) => item.isPinned === true),
@@ -62,7 +68,8 @@ export const PinnedCommandMenuItemButtons = () => {
     : null;
 
   const shouldHideCommandMenuItemLabel = (commandMenuItemId: string) =>
-    isSidePanelFooter && commandMenuItemId !== labelledCommandMenuItemId;
+    isMobilePageHeader ||
+    (isSidePanelFooter && commandMenuItemId !== labelledCommandMenuItemId);
 
   const {
     pinnedInlineCommandMenuItems,
@@ -71,7 +78,11 @@ export const PinnedCommandMenuItemButtons = () => {
     onCommandMenuItemDimensionChange,
   } = usePinnedCommandMenuItemsInlineLayout({
     pinnedCommandMenuItems,
-    layoutKey: isSidePanelFooter ? 'side-panel-footer' : 'page-header',
+    layoutKey: isSidePanelFooter
+      ? 'side-panel-footer'
+      : isMobilePageHeader
+        ? 'page-header-mobile'
+        : 'page-header',
   });
 
   const isCommandMenuItemLabelled = (
